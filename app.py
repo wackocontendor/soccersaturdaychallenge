@@ -35,7 +35,6 @@ def filter_data(df):
     valid_leagues = ["Premier League", "Sky Bet Championship", "Sky Bet League One", "Sky Bet League Two", "National League"]
     return df[(df['kick_off'] == kick_off_time) & (df['league'].isin(valid_leagues))]
 
-## main function
 def main():
     st.write("# Soccer Saturday Challenge")
     input_date = get_search_date()
@@ -47,6 +46,5 @@ def main():
     output_data = filter_data(fixture_df)
     st.dataframe(output_data)
 
-## run the main function if this script is being directly referenced
 if __name__ == "__main__":
     main()
