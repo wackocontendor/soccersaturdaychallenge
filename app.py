@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import pandas as pd
 
@@ -13,7 +13,10 @@ def get_fixture_url(input_date):
     return fixtures_url_prefix + input_date
 
 def get_search_date():
-    input_date = st.date_input("When are you planning to do the Soccer Saturday Challenge?", "today")
+    d = datetime.today()
+    t = timedelta((12 - d.weekday()) % 7)
+    next_saturday = (d + t)
+    input_date = st.date_input("When are you planning to do the Soccer Saturday Challenge?", next_saturday)
     return input_date.strftime("%#d-%B-%Y")
 
 def extract_fixture_data(soup):
@@ -35,8 +38,28 @@ def filter_data(df):
     valid_leagues = ["Premier League", "Sky Bet Championship", "Sky Bet League One", "Sky Bet League Two", "National League"]
     return df[(df['kick_off'] == kick_off_time) & (df['league'].isin(valid_leagues))]
 
-def main():
+def stack_teams(df):
+    df_home_team = df['home_team'].rename('team')
+    df_away_team = df['away_team'].rename('team')
+    stack_teams = pd.concat([df_home_team, df_away_team], axis=0)
+    return stack_teams
+
+def join_addresses(df):
+    addresses = pd.read_csv('data/stadium_coordinates.csv')
+    merged_df = pd.merge(df, addresses, left_on='team', right_on='team', how='inner')
+    return merged_df
+
+def generate_app(df):
     st.write("# Soccer Saturday Challenge")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Teams", value=len(pd.unique(df['team'])))
+    with col2:
+        st.metric("Leagues", value=len(pd.unique(df['league'])))
+    st.map(df[['lat', 'lon']], zoom=5)
+    st.dataframe(df[['team', 'stadium', 'league', 'postcode']], use_container_width=True, hide_index=True)
+
+def main():
     input_date = get_search_date()
     fixture_url = get_fixture_url(input_date)
     fixture_html = get_html_document(fixture_url)
@@ -44,7 +67,9 @@ def main():
     fixture_data = extract_fixture_data(soup)
     fixture_df = pd.DataFrame(fixture_data)
     output_data = filter_data(fixture_df)
-    st.dataframe(output_data)
+    stacked_teams = stack_teams(output_data)
+    with_addresses = join_addresses(stacked_teams)
+    generate_app(with_addresses)
 
 if __name__ == "__main__":
     main()
