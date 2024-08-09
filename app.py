@@ -50,7 +50,6 @@ def join_addresses(df):
     return merged_df
 
 def generate_app(df):
-    st.write("# Soccer Saturday Challenge")
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Teams", value=len(pd.unique(df['team'])))
@@ -60,6 +59,7 @@ def generate_app(df):
     st.dataframe(df[['team', 'stadium', 'league', 'postcode']], use_container_width=True, hide_index=True)
 
 def main():
+    st.write("# Soccer Saturday Challenge")
     input_date = get_search_date()
     fixture_url = get_fixture_url(input_date)
     fixture_html = get_html_document(fixture_url)
